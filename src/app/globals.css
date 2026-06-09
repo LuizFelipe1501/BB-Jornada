@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+:root {
+  --bb-blue: #0033A0;
+  --bb-yellow: #FFCC00;
+  --bb-blue-light: #1A4FBF;
+  --bb-blue-dark: #00257A;
+  --bb-gray: #F5F5F5;
+  --bb-gray-medium: #E8E8E8;
+  --bb-text: #1A1A1A;
+  --bb-text-secondary: #6B6B6B;
+  --bb-success: #00A651;
+  --bb-warning: #FF8C00;
+  --bb-danger: #D32F2F;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0033A0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  height: 100%;
+}
+
+#app-shell {
+  width: 100%;
+  max-width: 430px;
+  height: 100dvh;
+  margin: 0 auto;
+  background: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.scrollable {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollable::-webkit-scrollbar { display: none; }
+
+.bb-card {
+  background: #F0F4FF;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.bb-btn-primary {
+  background: #0033A0;
+  color: white;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.bb-btn-primary:active { background: #00257A; }
+
+.bb-btn-secondary {
+  background: white;
+  color: #0033A0;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid #0033A0;
+  width: 100%;
+  cursor: pointer;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp 0.35s ease forwards; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.typing-dot { animation: pulse-dot 1.2s ease infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+.chapter-active { border-left: 3px solid #0033A0; }
+.chapter-done { border-left: 3px solid #00A651; }
+.chapter-locked { border-left: 3px solid #E0E0E0; opacity: 0.6; }
+
+.score-ring {
+  filter: drop-shadow(0 0 8px rgba(0,51,160,0.3));
+}
