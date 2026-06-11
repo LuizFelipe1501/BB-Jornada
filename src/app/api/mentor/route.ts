@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest } from 'next/server';
 
+// Aumenta o timeout na Vercel para 30s (necessário para streaming)
+export const maxDuration = 30;
+
 const SYSTEM_PROMPT = `Você é o BB Mentor, o mentor financeiro pessoal e inteligente do Banco do Brasil.
 
 Seu papel é agir como um guia financeiro contínuo — não um chatbot genérico. Você tem memória do contexto financeiro do usuário e fala de forma direta, humana e motivadora.
@@ -35,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   if (!apiKey || apiKey === 'cole_sua_chave_aqui') {
     return Response.json(
-      { error: 'GEMINI_API_KEY não configurada. Adicione no .env.local ou nas variáveis de ambiente da Vercel.' },
+      { error: 'GEMINI_API_KEY não configurada. Adicione nas variáveis de ambiente da Vercel.' },
       { status: 500 }
     );
   }
@@ -52,46 +55,80 @@ export async function POST(req: NextRequest) {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash', // mais estável e amplamente disponível
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Monta histórico no formato do Gemini
-    const history = messages
-      .filter((m) => m.role !== 'ai' || messages.indexOf(m) !== 0) // remove a mensagem inicial do sistema
-      .map((m) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }],
-      }));
+    // Monta histórico corretamente para o Gemini:
+    // - Exclui a primeira mensagem (saudação da IA que é gerada localmente)
+    // - Garante alternância estrita user → model
+    // - Exclui mensagens vazias ou com erro
+    const rawHistory = messages.slice(1); // remove saudação inicial do app
+
+    type GeminiRole = 'user' | 'model';
+    const history: { role: GeminiRole; parts: { text: string }[] }[] = [];
+
+    for (const m of rawHistory) {
+      if (!m.text || m.text.trim() === '') continue;
+      const role: GeminiRole = m.role === 'user' ? 'user' : 'model';
+      const last = history[history.length - 1];
+      if (last && last.role === role) {
+        // Mescla com a anterior para manter alternância
+        last.parts[0].text += '\n' + m.text;
+      } else {
+        history.push({ role, parts: [{ text: m.text }] });
+      }
+    }
+
+    // O Gemini exige que o histórico termine com 'model' (não 'user')
+    // porque vamos enviar currentMessage como o próximo 'user'
+    if (history.length > 0 && history[history.length - 1].role === 'user') {
+      history.pop();
+    }
 
     const chat = model.startChat({ history });
 
-    // Streaming
     const result = await chat.sendMessageStream(currentMessage);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
-          if (text) {
-            controller.enqueue(encoder.encode(text));
+        try {
+          for await (const chunk of result.stream) {
+            const text = chunk.text();
+            if (text) {
+              controller.enqueue(encoder.encode(text));
+            }
           }
+        } catch (streamErr) {
+          console.error('Stream error:', streamErr);
+        } finally {
+          controller.close();
         }
-        controller.close();
       },
     });
 
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
-        'Transfer-Encoding': 'chunked',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no', // desativa buffering no nginx/vercel
       },
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro desconhecido';
     console.error('Gemini API error:', message);
-    return Response.json({ error: `Erro na API Gemini: ${message}` }, { status: 500 });
+
+    // Mensagem de erro mais específica para debug
+    let userMessage = 'Erro ao conectar com o BB Mentor.';
+    if (message.includes('API_KEY') || message.includes('key')) {
+      userMessage = 'Chave de API inválida. Verifique a variável GEMINI_API_KEY na Vercel.';
+    } else if (message.includes('quota') || message.includes('limit')) {
+      userMessage = 'Limite de uso da API atingido. Tente novamente em alguns minutos.';
+    } else if (message.includes('model')) {
+      userMessage = 'Modelo não disponível. Verifique se sua chave tem acesso ao Gemini.';
+    }
+
+    return Response.json({ error: userMessage }, { status: 500 });
   }
 }
