@@ -169,43 +169,43 @@ export default function JornadaScreen() {
 
         {/* Números rápidos */}
         {isLivre ? (
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Total Guardado</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#00A651' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#00A651', whiteSpace: 'nowrap' }}>
                 R$ {economiaTotal.toLocaleString('pt-BR')}
               </p>
             </div>
-            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Próximo Marco</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#FF8C00' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#FF8C00', whiteSpace: 'nowrap' }}>
                 R$ {nextMilestone.toLocaleString('pt-BR')}
               </p>
             </div>
-            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Falta p/ Marco</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#0033A0' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#0033A0', whiteSpace: 'nowrap' }}>
                 R$ {Math.max(0, nextMilestone - economiaTotal).toLocaleString('pt-BR')}
               </p>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Guardado</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#00A651' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#00A651', whiteSpace: 'nowrap' }}>
                 R$ {economiaTotal.toLocaleString('pt-BR')}
               </p>
             </div>
-            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Por mês</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#FF8C00' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#FF8C00', whiteSpace: 'nowrap' }}>
                 R$ {(por_mes || 0).toLocaleString('pt-BR')}
               </p>
             </div>
-            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '12px 14px' }}>
+            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '10px 8px', textAlign: 'center' }}>
               <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Faltam</p>
-              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#0033A0' }}>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 15, color: '#0033A0', whiteSpace: 'nowrap' }}>
                 R$ {(faltam || 0).toLocaleString('pt-BR')}
               </p>
             </div>
