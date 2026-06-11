@@ -32,14 +32,53 @@ export default function NovaJornadaScreen() {
   const [analisando, setAnalisando] = useState(false);
   const [aiText, setAiText] = useState('');
 
+  // Estados para meta/sonho customizado
+  const [customSonhoNome, setCustomSonhoNome] = useState('');
+  const [customSonhoIcon, setCustomSonhoIcon] = useState('🎯');
+
   const handleSonho = (s: typeof sonhos[0]) => {
     setSonhoSelecionado(s);
+    setStep('valor');
+  };
+
+  const handleCustomSonhoSubmit = () => {
+    if (!customSonhoNome.trim()) return;
+    setSonhoSelecionado({
+      label: customSonhoNome.trim(),
+      icon: customSonhoIcon || '🎯',
+      cor: '#0033A0'
+    });
     setStep('valor');
   };
 
   const handleValor = () => {
     if (!valor || isNaN(Number(valor.replace(/\D/g, '')))) return;
     setStep('prazo');
+  };
+
+  const handleMetaLivre = () => {
+    setValor('livre');
+    setPrazo('livre');
+    setStep('analise');
+    setAnalisando(true);
+
+    const messages = [
+      'Analisando seu padrão de movimentações...',
+      'Construindo seu motor de acúmulo contínuo...',
+      'Habilitando o modo "Meta Livre" com o BB Mentor...',
+      'Tudo pronto para você poupar sem pressa!',
+    ];
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < messages.length) {
+        setAiText(messages[i]);
+        i++;
+      } else {
+        clearInterval(interval);
+        setAnalisando(false);
+        setStep('plano');
+      }
+    }, 900);
   };
 
   const handlePrazo = () => {
@@ -66,8 +105,9 @@ export default function NovaJornadaScreen() {
   };
 
   const handleCriarJornada = () => {
-    const valorNum = Number(valor.replace(/\D/g, ''));
-    const prazoNum = Number(prazo);
+    const isLivre = valor === 'livre';
+    const valorNum = isLivre ? null : Number(valor.replace(/\D/g, ''));
+    const prazoNum = isLivre ? null : Number(prazo);
     const novaJornada: Jornada = {
       id: Date.now().toString(),
       sonho: sonhoSelecionado?.label || 'Meu sonho',
@@ -78,16 +118,19 @@ export default function NovaJornadaScreen() {
       capitulo: 1,
       score: 50,
       criada: new Date().toISOString(),
-      descricao: '',
+      descricao: isLivre ? 'Poupança livre e contínua' : '',
       cor: sonhoSelecionado?.cor || '#0033A0',
       insights: aiInsightsGerados,
+      meta_livre: isLivre,
+      trilha_status: {},
     };
     adicionarJornada(novaJornada);
     setScreen('jornada');
   };
 
-  const valorNum = Number(valor.replace(/\D/g, ''));
-  const prazoNum = Number(prazo) || 12;
+  const isLivre = valor === 'livre';
+  const valorNum = isLivre ? 0 : Number(valor.replace(/\D/g, '')) || 0;
+  const prazoNum = isLivre ? 0 : Number(prazo) || 12;
   const porMes = valorNum && prazoNum ? Math.round(valorNum / prazoNum) : 0;
 
   return (
@@ -102,10 +145,12 @@ export default function NovaJornadaScreen() {
 
         {/* Steps indicator */}
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          {(['escolha', 'valor', 'prazo', 'plano'] as Step[]).map((s, i) => {
+          {(['escolha', 'valor', 'prazo', 'plano'] as Step[]).map((s) => {
             const steps: Step[] = ['escolha', 'valor', 'prazo', 'plano'];
             const current = steps.indexOf(step);
             const thisIdx = steps.indexOf(s);
+            // Se for meta livre, ignoramos o step "prazo" no indicador visual
+            if (isLivre && s === 'prazo') return null;
             return (
               <div key={s} style={{
                 width: 8, height: 8, borderRadius: 4,
@@ -119,14 +164,66 @@ export default function NovaJornadaScreen() {
       <div className="scrollable" style={{ flex: 1, padding: '20px 16px 24px' }}>
         {step === 'escolha' && (
           <div className="fade-in-up">
-            <div style={{ marginBottom: 24 }}>
-              <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 800, color: '#0033A0' }}>
-                Qual é o seu sonho?
+            <div style={{ marginBottom: 20 }}>
+              <h2 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 800, color: '#0033A0' }}>
+                Qual é o seu sonho ou meta?
               </h2>
               <p style={{ margin: 0, color: '#6B6B6B', fontSize: 14 }}>
                 O BB Mentor vai criar uma jornada financeira personalizada pra você.
               </p>
             </div>
+
+            {/* Nova meta customizada com total poder de um sonho */}
+            <div style={{ background: '#F0F4FF', borderRadius: 14, padding: '16px', marginBottom: 24, border: '1px solid #C5D0F0' }}>
+              <label style={{ fontSize: 11, color: '#0033A0', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                ✨ Criar Meta Customizada
+              </label>
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <input
+                  type="text"
+                  placeholder="Ex: Comprar notebook, Fazer intercâmbio..."
+                  value={customSonhoNome}
+                  onChange={e => setCustomSonhoNome(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 14px',
+                    borderRadius: 10,
+                    border: '1.5px solid #E0E0E0',
+                    outline: 'none',
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="🎯"
+                  value={customSonhoIcon}
+                  onChange={e => setCustomSonhoIcon(e.target.value)}
+                  maxLength={2}
+                  style={{
+                    width: 52,
+                    textAlign: 'center',
+                    padding: '12px 0',
+                    borderRadius: 10,
+                    border: '1.5px solid #E0E0E0',
+                    outline: 'none',
+                    fontSize: 18,
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+              {customSonhoNome.trim() && (
+                <button
+                  onClick={handleCustomSonhoSubmit}
+                  className="bb-btn-primary"
+                  style={{ marginTop: 12, padding: '10px', height: 'auto', fontSize: 13 }}
+                >
+                  Continuar com "{customSonhoNome}" {customSonhoIcon} →
+                </button>
+              )}
+            </div>
+
+            <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#6B6B6B' }}>Ou escolha uma sugestão:</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {sonhos.map((s) => (
                 <button
@@ -172,7 +269,7 @@ export default function NovaJornadaScreen() {
                 <input
                   type="number"
                   placeholder="0,00"
-                  value={valor}
+                  value={valor === 'livre' ? '' : valor}
                   onChange={(e) => setValor(e.target.value)}
                   style={{
                     border: 'none',
@@ -205,9 +302,29 @@ export default function NovaJornadaScreen() {
               ))}
             </div>
 
-            <button className="bb-btn-primary" onClick={handleValor} disabled={!valor}>
-              Continuar →
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button className="bb-btn-primary" onClick={handleValor} disabled={!valor}>
+                Definir Valor e Continuar →
+              </button>
+              
+              <button 
+                onClick={handleMetaLivre}
+                style={{
+                  background: 'none',
+                  border: '2px dashed #FFCC00',
+                  borderRadius: 12,
+                  padding: '14px',
+                  color: '#0033A0',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'background 0.2s',
+                }}
+              >
+                Poupar Livremente (Sem definição específica de valor/prazo) ✨
+              </button>
+            </div>
           </div>
         )}
 
@@ -304,20 +421,30 @@ export default function NovaJornadaScreen() {
                   <p style={{ margin: '2px 0 0', color: 'white', fontWeight: 800, fontSize: 18 }}>{sonhoSelecionado?.label}</p>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Meta</p>
-                  <p style={{ margin: '4px 0 0', color: 'white', fontWeight: 700, fontSize: 15 }}>R$ {valorNum.toLocaleString('pt-BR')}</p>
+              
+              {isLivre ? (
+                <div style={{ textAlign: 'center', padding: '8px 0', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                  <p style={{ margin: 0, color: '#FFCC00', fontWeight: 800, fontSize: 14, letterSpacing: 0.5 }}>MODALIDADE META LIVRE 🌟</p>
+                  <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 1.4 }}>
+                    Foco total em economizar no seu ritmo. A evolução será medida em marcos de conquistas!
+                  </p>
                 </div>
-                <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
-                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Prazo</p>
-                  <p style={{ margin: '4px 0 0', color: 'white', fontWeight: 700, fontSize: 15 }}>{prazoNum} meses</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Meta</p>
+                    <p style={{ margin: '4px 0 0', color: 'white', fontWeight: 700, fontSize: 15 }}>R$ {valorNum.toLocaleString('pt-BR')}</p>
+                  </div>
+                  <div style={{ textAlign: 'center', borderLeft: '1px solid rgba(255,255,255,0.2)', borderRight: '1px solid rgba(255,255,255,0.2)' }}>
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Prazo</p>
+                    <p style={{ margin: '4px 0 0', color: 'white', fontWeight: 700, fontSize: 15 }}>{prazoNum} meses</p>
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Por mês</p>
+                    <p style={{ margin: '4px 0 0', color: '#FFCC00', fontWeight: 700, fontSize: 15 }}>R$ {porMes.toLocaleString('pt-BR')}</p>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'center' }}>
-                  <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>Por mês</p>
-                  <p style={{ margin: '4px 0 0', color: '#FFCC00', fontWeight: 700, fontSize: 15 }}>R$ {porMes.toLocaleString('pt-BR')}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* AI Insights */}

@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore';
 import { ChevronRight, Shield, Bell, HelpCircle, FileText, LogOut } from 'lucide-react';
 
 export default function PerfilScreen() {
-  const { nome, jornadaAtiva, rendaMensal, gastosMensais } = useAppStore();
+  const { nome, jornadaAtiva, rendaMensal, gastosMensais, resetUserSession } = useAppStore();
 
   const score = jornadaAtiva?.score || 0;
   const capacidadePoupanca = rendaMensal - gastosMensais;
@@ -13,8 +13,14 @@ export default function PerfilScreen() {
     { icon: <Bell size={18} />, label: 'Notificações', sub: 'Alertas e preferências' },
     { icon: <FileText size={18} />, label: 'Histórico de jornadas', sub: '1 jornada concluída' },
     { icon: <HelpCircle size={18} />, label: 'Ajuda e suporte', sub: 'Central de ajuda' },
-    { icon: <LogOut size={18} />, label: 'Sair', sub: '', danger: true },
+    { icon: <LogOut size={18} />, label: 'Sair', sub: 'Reiniciar sessão do MVP', danger: true },
   ];
+
+  const handleItemClick = (label: string) => {
+    if (label === 'Sair') {
+      resetUserSession();
+    }
+  };
 
   return (
     <div className="scrollable" style={{ flex: 1 }}>
@@ -27,10 +33,10 @@ export default function PerfilScreen() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 28, fontWeight: 800, color: '#0033A0',
           }}>
-            {nome.charAt(0)}
+            {nome ? nome.charAt(0) : 'J'}
           </div>
           <div>
-            <p style={{ margin: 0, color: 'white', fontWeight: 800, fontSize: 20 }}>{nome}</p>
+            <p style={{ margin: 0, color: 'white', fontWeight: 800, fontSize: 20 }}>{nome || 'Jurado'}</p>
             <p style={{ margin: '4px 0 0', color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
               Cliente BB · Conta Corrente
             </p>
@@ -123,6 +129,7 @@ export default function PerfilScreen() {
           {menuItems.map((item, i) => (
             <div
               key={item.label}
+              onClick={() => handleItemClick(item.label)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 14,
                 padding: '14px 16px',

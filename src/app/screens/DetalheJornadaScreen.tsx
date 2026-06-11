@@ -10,24 +10,16 @@ const quickPrompts = [
   'Qual meu próximo passo?',
 ];
 
-interface Message {
-  role: 'ai' | 'user';
-  text: string;
-  streaming?: boolean;
-  error?: boolean;
-}
-
 export default function DetalheJornadaScreen() {
-  const { jornadaAtiva, setScreen } = useAppStore();
-  const [messages, setMessages] = useState<Message[]>([
+  const { jornadaAtiva, setScreen, activeDetalheTab, setActiveDetalheTab } = useAppStore();
+  const [messages, setMessages] = useState<{ role: 'ai' | 'user'; text: string; streaming?: boolean; error?: boolean }[]>([
     {
       role: 'ai',
-      text: `Olá! Sou o BB Mentor, seu guia financeiro pessoal com IA. Estou acompanhando sua jornada "${jornadaAtiva?.sonho}" desde o início. Você está no caminho certo — 8% acima da meta mensal! O que você quer saber?`,
+      text: `Olá! Sou o BB Mentor, seu guia financeiro pessoal com IA. Estou acompanhando sua jornada "${jornadaAtiva?.sonho}" desde o início. O que você quer saber sobre sua trilha de acúmulo?`,
     },
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'mentor' | 'grafico' | 'gastos'>('mentor');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,16 +27,17 @@ export default function DetalheJornadaScreen() {
   }, [messages]);
 
   const sendMessage = async (text: string) => {
-    if (isLoading || !text.trim()) return;
+    if (isLoading || !text.trim() || !jornadaAtiva) return;
 
-    const userMsg: Message = { role: 'user', text };
+    const jInfo = jornadaAtiva;
+    const userMsg = { role: 'user' as const, text };
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInput('');
     setIsLoading(true);
 
     // Adiciona placeholder da IA com streaming
-    setMessages(prev => [...prev, { role: 'ai', text: '', streaming: true }]);
+    setMessages(prev => [...prev, { role: 'ai' as const, text: '', streaming: true }]);
 
     try {
       const historyForApi = updatedMessages.slice(1).map(m => ({
@@ -58,6 +51,21 @@ export default function DetalheJornadaScreen() {
         body: JSON.stringify({
           messages: historyForApi,
           currentMessage: text,
+          jornada: {
+            sonho: jInfo.sonho,
+            valor: jInfo.valor,
+            prazo: jInfo.prazo,
+            acumulado: jInfo.acumulado,
+            capitulo: jInfo.capitulo,
+            score: jInfo.score,
+            meta_livre: jInfo.meta_livre,
+          },
+          user: {
+            nome: useAppStore.getState().nome,
+            rendaMensal: useAppStore.getState().rendaMensal,
+            gastosMensais: useAppStore.getState().gastosMensais,
+          },
+          transacoes: useAppStore.getState().transacoes
         }),
       });
 
@@ -114,7 +122,31 @@ export default function DetalheJornadaScreen() {
   const jornadaInfo = jornadaAtiva;
   if (!jornadaInfo) return null;
 
-  const porcentagem = Math.round((jornadaInfo.acumulado / jornadaInfo.valor) * 100);
+  const isLivre = jornadaInfo.meta_livre;
+  
+  // Cálculo de marcos para a Meta Livre
+  const milestones = [500, 1500, 5000, 10000, 20000, 50000];
+  let nextMilestone = milestones[0];
+  let prevMilestone = 0;
+  for (let i = 0; i < milestones.length; i++) {
+    if (jornadaInfo.acumulado < milestones[i]) {
+      nextMilestone = milestones[i];
+      prevMilestone = i > 0 ? milestones[i-1] : 0;
+      break;
+    }
+    if (i === milestones.length - 1) {
+      nextMilestone = milestones[i];
+      prevMilestone = milestones[i-1];
+    }
+  }
+
+  const range = nextMilestone - prevMilestone;
+  const progressInRange = Math.max(0, jornadaInfo.acumulado - prevMilestone);
+  const porcentagemLivre = Math.min(100, Math.round((progressInRange / range) * 100));
+
+  const porcentagem = isLivre 
+    ? porcentagemLivre 
+    : Math.round((jornadaInfo.acumulado / (jornadaInfo.valor || 1)) * 100);
 
   const gastosData = [
     { cat: 'Alimentação', valor: 890, limite: 800, icon: '🍔' },
@@ -143,12 +175,16 @@ export default function DetalheJornadaScreen() {
             <ArrowLeft size={20} />
           </button>
           <div style={{ flex: 1 }}>
-            <p style={{ margin: 0, color: '#FFCC00', fontSize: 12, fontWeight: 700 }}>JORNADA ATIVA</p>
+            <p style={{ margin: 0, color: '#FFCC00', fontSize: 12, fontWeight: 700 }}>
+              {isLivre ? 'META LIVRE ATIVA' : 'JORNADA ATIVA'}
+            </p>
             <p style={{ margin: 0, color: 'white', fontWeight: 800, fontSize: 16 }}>{jornadaInfo.icon} {jornadaInfo.sonho}</p>
           </div>
           <div style={{ textAlign: 'right' }}>
             <p style={{ margin: 0, color: 'white', fontWeight: 800, fontSize: 18 }}>{porcentagem}%</p>
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>concluído</p>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.7)', fontSize: 11 }}>
+              {isLivre ? `marco N${milestones.indexOf(nextMilestone) + 1}` : 'concluído'}
+            </p>
           </div>
         </div>
 
@@ -165,17 +201,17 @@ export default function DetalheJornadaScreen() {
           ].map(t => (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id as typeof activeTab)}
+              onClick={() => setActiveDetalheTab(t.id as any)}
               style={{
                 flex: 1,
                 background: 'none',
                 border: 'none',
-                color: activeTab === t.id ? '#FFCC00' : 'rgba(255,255,255,0.65)',
-                fontWeight: activeTab === t.id ? 700 : 500,
+                color: activeDetalheTab === t.id ? '#FFCC00' : 'rgba(255,255,255,0.65)',
+                fontWeight: activeDetalheTab === t.id ? 700 : 500,
                 fontSize: 13,
                 padding: '8px 4px',
                 cursor: 'pointer',
-                borderBottom: activeTab === t.id ? '2px solid #FFCC00' : '2px solid transparent',
+                borderBottom: activeDetalheTab === t.id ? '2px solid #FFCC00' : '2px solid transparent',
               }}
             >
               {t.label}
@@ -185,7 +221,7 @@ export default function DetalheJornadaScreen() {
       </div>
 
       {/* Tab: Mentor */}
-      {activeTab === 'mentor' && (
+      {activeDetalheTab === 'mentor' && (
         <>
           <div className="scrollable" style={{ flex: 1, padding: '16px' }}>
             {messages.map((msg, i) => (
@@ -209,7 +245,7 @@ export default function DetalheJornadaScreen() {
                   background: msg.role === 'user'
                     ? '#0033A0'
                     : msg.error ? '#FFF3F3' : '#F0F4FF',
-                  color: msg.role === 'user' ? 'white' : msg.error ? '#D32F2F' : '#1A1A1A',
+                  color: msg.role === 'user' ? 'white' : msg.error ? '#1A1A1A' : '#1A1A1A',
                   borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                   padding: '10px 14px',
                   fontSize: 14,
@@ -308,7 +344,7 @@ export default function DetalheJornadaScreen() {
       )}
 
       {/* Tab: Gráfico */}
-      {activeTab === 'grafico' && (
+      {activeDetalheTab === 'grafico' && (
         <div className="scrollable" style={{ flex: 1, padding: 16 }}>
           <p style={{ margin: '0 0 16px', fontWeight: 700, fontSize: 16 }}>Evolução mensal de poupança</p>
           <div style={{ background: '#F0F4FF', borderRadius: 14, padding: '16px 12px' }}>
@@ -360,14 +396,17 @@ export default function DetalheJornadaScreen() {
           <div style={{ marginTop: 16, background: '#EEF2FF', borderRadius: 14, padding: '14px 16px', borderLeft: '4px solid #0033A0' }}>
             <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 14, color: '#0033A0' }}>🔮 Previsão do Mentor</p>
             <p style={{ margin: 0, fontSize: 13, color: '#1A1A1A', lineHeight: 1.5 }}>
-              Baseado no seu padrão dos últimos 3 meses, você deve alcançar R$ 20.000 guardados até outubro — 2 meses antes do prazo original.
+              {isLivre 
+                ? `Baseado nas suas movimentações, você está acumulando com consistência ideal. O seu score relacional aponta que você está construindo hábitos que aceleram a segurança financeira de longo prazo.`
+                : `Baseado no seu padrão dos últimos 3 meses, você deve alcançar R$ 20.000 guardados até outubro — 2 meses antes do prazo original.`
+              }
             </p>
           </div>
         </div>
       )}
 
       {/* Tab: Gastos */}
-      {activeTab === 'gastos' && (
+      {activeDetalheTab === 'gastos' && (
         <div className="scrollable" style={{ flex: 1, padding: 16 }}>
           <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 16 }}>Gastos vs. Limites</p>
           <p style={{ margin: '0 0 16px', fontSize: 13, color: '#6B6B6B' }}>Comparativo do mês atual</p>
@@ -411,7 +450,7 @@ export default function DetalheJornadaScreen() {
           <div style={{ marginTop: 16, background: '#FFF3F3', border: '1px solid #FFCDD2', borderRadius: 14, padding: '14px 16px' }}>
             <p style={{ margin: '0 0 6px', fontWeight: 700, color: '#D32F2F', fontSize: 14 }}>⚠️ Alerta do Mentor</p>
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>
-              Delivery e assinaturas estão R$ 230 acima do planejado. Esse padrão, se mantido, pode atrasar sua meta em 3 semanas.
+              Delivery e assinaturas estão R$ 230 acima do planejado. Esse padrão, se mantido, pode atrasar seu acúmulo financeiro no curto prazo.
             </p>
           </div>
         </div>

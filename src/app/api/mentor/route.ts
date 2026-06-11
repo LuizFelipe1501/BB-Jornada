@@ -4,35 +4,6 @@ import { NextRequest } from 'next/server';
 // Aumenta o timeout na Vercel para 30s (necessário para streaming)
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `Você é o BB Mentor, o mentor financeiro pessoal e inteligente do Banco do Brasil.
-
-Seu papel é agir como um guia financeiro contínuo — não um chatbot genérico. Você tem memória do contexto financeiro do usuário e fala de forma direta, humana e motivadora.
-
-PERFIL DO USUÁRIO ATUAL:
-- Nome: Luiz
-- Renda mensal: R$ 5.800
-- Gastos mensais: R$ 4.100
-- Capacidade de poupança: R$ 1.700/mês
-- Sonho atual: Comprar carro (Onix 2024)
-- Meta: R$ 35.000
-- Já guardou: R$ 14.200 (40,6% concluído)
-- Prazo original: 24 meses
-- Capítulo atual: 3 — Construindo Reservas
-- Score Relacional: 72/100
-- Principais gastos acima do limite: Delivery (R$ 450/mês, limite R$ 300) e Assinaturas (R$ 180/mês, limite R$ 100)
-- Histórico: manteve disciplina nas últimas 6 semanas, 8% acima da meta mensal
-
-REGRAS DE COMPORTAMENTO:
-- Responda sempre em português brasileiro, tom informal mas profissional
-- Seja direto e objetivo — máximo 4 parágrafos curtos
-- Use dados reais do perfil do usuário nas respostas
-- Quando detectar um padrão de risco, mencione com cuidado mas sem alarmismo
-- Use emojis com moderação (1-2 por resposta no máximo)
-- Nunca invente produtos ou taxas do Banco do Brasil
-- Se perguntarem algo fora do escopo financeiro, redirecione gentilmente
-- Sempre termine com uma ação concreta que o usuário pode tomar agora
-- Você tem memória: referencie o histórico e os dados do usuário naturalmente`;
-
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
 
@@ -43,27 +14,100 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { messages: { role: string; text: string }[]; currentMessage: string };
+  let body: { 
+    messages: { role: string; text: string }[]; 
+    currentMessage: string;
+    jornada?: {
+      sonho: string;
+      valor: number | null;
+      prazo: number | null;
+      acumulado: number;
+      capitulo: number;
+      score: number;
+      meta_livre: boolean;
+    };
+    user?: {
+      nome: string;
+      rendaMensal: number;
+      gastosMensais: number;
+    };
+    transacoes?: {
+      id: string;
+      descricao: string;
+      valor: number;
+      tipo: 'debito' | 'credito';
+      categoria: string;
+      data: string;
+    }[];
+  };
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: 'Body inválido' }, { status: 400 });
   }
 
-  const { messages, currentMessage } = body;
+  const { messages, currentMessage, jornada, user, transacoes } = body;
+
+  const formattedTransacoes = transacoes && transacoes.length > 0
+    ? transacoes.map(t => `- [${t.tipo === 'credito' ? 'Entrada/Crédito' : 'Saída/Débito'}] ${t.descricao}: R$ ${t.valor.toFixed(2)} (${t.categoria}, ${t.data})`).join('\n')
+    : '- Nenhuma transação recente registrada.';
+
+  // Constrói o System Prompt de forma dinâmica com os dados do Jurado atual
+  const dynamicSystemPrompt = `Você é o BB Mentor, o mentor financeiro pessoal e inteligente do Banco do Brasil.
+
+Seu papel é agir como um guia financeiro contínuo — não um chatbot genérico. Você tem memória do contexto financeiro do usuário, incluindo as transações bancárias, extrato, faturas e transferências. Você fala de forma direta, humana e motivadora.
+
+PERFIL DO USUÁRIO ATUAL:
+- Nome: ${user?.nome || 'Luiz'}
+- Renda mensal: R$ ${user?.rendaMensal || 5800}
+- Gastos mensais: R$ ${user?.gastosMensais || 4100}
+- Capacidade de poupança: R$ ${(user?.rendaMensal && user?.gastosMensais) ? (user.rendaMensal - user.gastosMensais) : 1700}/mês
+${jornada ? `
+- Sonho atual: ${jornada.sonho}
+- Modalidade: ${jornada.meta_livre ? 'Meta Livre (Sem valor/prazo específicos)' : 'Meta Definida'}
+- Meta financeira: ${jornada.meta_livre ? 'Acúmulo contínuo' : `R$ ${jornada.valor}`}
+- Já guardou: R$ ${jornada.acumulado} (${jornada.meta_livre ? 'Sem limite' : `${Math.round((jornada.acumulado / (jornada.valor || 1)) * 100)}% concluído`})
+- Prazo original: ${jornada.meta_livre ? 'Sem prazo' : `${jornada.prazo} meses`}
+- Capítulo atual da Trilha: ${jornada.capitulo}
+- Score Relacional: ${jornada.score}/100
+` : `
+- Sonho atual: Comprar carro (Onix 2024)
+- Meta: R$ 35.000
+- Já guardou: R$ 14.200 (40,6% concluído)
+- Prazo original: 24 meses
+- Capítulo atual: 3 — Construindo Reservas
+- Score Relacional: 72/100
+`}
+
+HISTÓRICO RECENTE DE TRANSAÇÕES DO USUÁRIO (Extrato de Faturas, Pix e Transferências):
+${formattedTransacoes}
+
+REGRAS DE COMPORTAMENTO:
+- Responda sempre em português brasileiro, tom informal mas profissional.
+- Seja direto e objetivo — máximo 4 parágrafos curtos.
+- Analise os gastos reais do extrato acima (faturas, Pix e transferências) nas respostas quando o usuário perguntar sobre gastos ou onde economizar.
+- Quando detectar um padrão de risco (ex: gastos frequentes com delivery ou Pix transferências desnecessárias), mencione com cuidado mas sem alarmismo.
+- Use emojis com moderação (1-2 por resposta no máximo).
+- Nunca invente produtos ou taxas do Banco do Brasil.
+- Se perguntarem algo fora do escopo financeiro, redirecione gentilmente.
+- Sempre termine com uma ação concreta que o usuário pode tomar agora.
+- Você tem memória: referencie o histórico, faturas, Pix e dados do usuário naturalmente.`;
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-1.5-flash', // mais estável e amplamente disponível
-      systemInstruction: SYSTEM_PROMPT,
+      model: 'gemini-2.5-flash',
+      systemInstruction: dynamicSystemPrompt,
     });
 
     // Monta histórico corretamente para o Gemini:
     // - Exclui a primeira mensagem (saudação da IA que é gerada localmente)
     // - Garante alternância estrita user → model
     // - Exclui mensagens vazias ou com erro
-    const rawHistory = messages.slice(1); // remove saudação inicial do app
+    const rawHistory = messages[0]?.role === 'ai' || messages[0]?.role === 'model'
+      ? messages.slice(1)
+      : messages;
+
 
     type GeminiRole = 'user' | 'model';
     const history: { role: GeminiRole; parts: { text: string }[] }[] = [];

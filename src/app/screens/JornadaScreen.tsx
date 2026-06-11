@@ -2,6 +2,7 @@
 import { useAppStore } from '../store/appStore';
 import { Plus, ChevronRight, Star, TrendingUp, Shield, Zap, Target } from 'lucide-react';
 import { useState } from 'react';
+import TrilhaModal from '../components/TrilhaModal';
 
 const capituloLabels = [
   'Conhecendo sua realidade',
@@ -57,16 +58,39 @@ function ScoreDimension({ label, value, icon }: { label: string; value: number; 
 export default function JornadaScreen() {
   const { jornadaAtiva, setScreen, setJornadaDetalhe } = useAppStore();
   const [showScore, setShowScore] = useState(false);
+  const [activeChapterTrilha, setActiveChapterTrilha] = useState<number | null>(null);
 
   if (!jornadaAtiva) {
     return <EmptyJornada />;
   }
 
-  const porcentagem = Math.round((jornadaAtiva.acumulado / jornadaAtiva.valor) * 100);
-  const mesesRestantes = jornadaAtiva.prazo - Math.floor((jornadaAtiva.acumulado / jornadaAtiva.valor) * jornadaAtiva.prazo);
+  const isLivre = jornadaAtiva.meta_livre;
+  
+  // Cálculo de marcos para a Meta Livre
+  const milestones = [500, 1500, 5000, 10000, 20000, 50000];
+  let nextMilestone = milestones[0];
+  let prevMilestone = 0;
+  for (let i = 0; i < milestones.length; i++) {
+    if (jornadaAtiva.acumulado < milestones[i]) {
+      nextMilestone = milestones[i];
+      prevMilestone = i > 0 ? milestones[i-1] : 0;
+      break;
+    }
+    if (i === milestones.length - 1) {
+      nextMilestone = milestones[i];
+      prevMilestone = milestones[i-1];
+    }
+  }
+
+  const range = nextMilestone - prevMilestone;
+  const progressInRange = Math.max(0, jornadaAtiva.acumulado - prevMilestone);
+  const porcentagemLivre = Math.min(100, Math.round((progressInRange / range) * 100));
+
+  const porcentagem = isLivre ? porcentagemLivre : Math.round((jornadaAtiva.acumulado / (jornadaAtiva.valor || 1)) * 100);
+  const mesesRestantes = isLivre ? null : (jornadaAtiva.prazo || 12) - Math.floor((jornadaAtiva.acumulado / (jornadaAtiva.valor || 1)) * (jornadaAtiva.prazo || 12));
   const economiaTotal = jornadaAtiva.acumulado;
-  const faltam = jornadaAtiva.valor - jornadaAtiva.acumulado;
-  const por_mes = Math.round(faltam / mesesRestantes);
+  const faltam = isLivre ? null : (jornadaAtiva.valor || 0) - jornadaAtiva.acumulado;
+  const por_mes = isLivre ? null : Math.round((faltam || 0) / (mesesRestantes || 1));
 
   return (
     <div className="scrollable" style={{ flex: 1 }}>
@@ -81,7 +105,9 @@ export default function JornadaScreen() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <Zap size={14} color="#FFCC00" fill="#FFCC00" />
-              <span style={{ color: '#FFCC00', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>JORNADA ATIVA</span>
+              <span style={{ color: '#FFCC00', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+                {isLivre ? 'META LIVRE ATIVA' : 'JORNADA ATIVA'}
+              </span>
             </div>
             <h2 style={{ margin: 0, color: 'white', fontSize: 24, fontWeight: 800 }}>
               {jornadaAtiva.icon} {jornadaAtiva.sonho}
@@ -100,6 +126,7 @@ export default function JornadaScreen() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13 }}>
               R$ {jornadaAtiva.acumulado.toLocaleString('pt-BR')} guardados
+              {isLivre && ` · Nível ${milestones.indexOf(nextMilestone) + 1}`}
             </span>
             <span style={{ color: '#FFCC00', fontWeight: 800, fontSize: 16 }}>{porcentagem}%</span>
           </div>
@@ -107,8 +134,17 @@ export default function JornadaScreen() {
             <div style={{ width: `${porcentagem}%`, background: '#FFCC00', height: '100%', borderRadius: 10 }} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Meta: R$ {jornadaAtiva.valor.toLocaleString('pt-BR')}</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{mesesRestantes} meses</span>
+            {isLivre ? (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Base: R$ {prevMilestone.toLocaleString('pt-BR')}</span>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Alvo: R$ {nextMilestone.toLocaleString('pt-BR')}</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Meta: R$ {jornadaAtiva.valor?.toLocaleString('pt-BR')}</span>
+                <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>{mesesRestantes} meses restantes</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -126,32 +162,55 @@ export default function JornadaScreen() {
               <ScoreDimension label="Consistência" value={72} icon="📅" />
               <ScoreDimension label="Evolução" value={60} icon="📈" />
               <ScoreDimension label="Saúde Financeira" value={68} icon="💚" />
-              <ScoreDimension label="Proximidade da Meta" value={porcentagem} icon="🏁" />
+              <ScoreDimension label="Proximidade do Objetivo" value={porcentagem} icon="🏁" />
             </div>
           </div>
         )}
 
         {/* Números rápidos */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-          <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '12px 14px' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Guardado</p>
-            <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#00A651' }}>
-              R$ {economiaTotal.toLocaleString('pt-BR')}
-            </p>
+        {isLivre ? (
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Total Guardado</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#00A651' }}>
+                R$ {economiaTotal.toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Próximo Marco</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#FF8C00' }}>
+                R$ {nextMilestone.toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Falta p/ Marco</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#0033A0' }}>
+                R$ {Math.max(0, nextMilestone - economiaTotal).toLocaleString('pt-BR')}
+              </p>
+            </div>
           </div>
-          <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '12px 14px' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Por mês</p>
-            <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#FF8C00' }}>
-              R$ {por_mes.toLocaleString('pt-BR')}
-            </p>
+        ) : (
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <div style={{ flex: 1, background: '#F0FFF4', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Guardado</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#00A651' }}>
+                R$ {economiaTotal.toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <div style={{ flex: 1, background: '#FFF8E7', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Por mês</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#FF8C00' }}>
+                R$ {(por_mes || 0).toLocaleString('pt-BR')}
+              </p>
+            </div>
+            <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '12px 14px' }}>
+              <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Faltam</p>
+              <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#0033A0' }}>
+                R$ {(faltam || 0).toLocaleString('pt-BR')}
+              </p>
+            </div>
           </div>
-          <div style={{ flex: 1, background: '#F0F4FF', borderRadius: 12, padding: '12px 14px' }}>
-            <p style={{ margin: 0, fontSize: 11, color: '#6B6B6B' }}>Faltam</p>
-            <p style={{ margin: '4px 0 0', fontWeight: 800, fontSize: 18, color: '#0033A0' }}>
-              R$ {faltam.toLocaleString('pt-BR')}
-            </p>
-          </div>
-        </div>
+        )}
 
         {/* AI Mentor card */}
         <div
@@ -177,9 +236,17 @@ export default function JornadaScreen() {
             </div>
           </div>
           <p style={{ margin: '0 0 12px', color: 'white', fontSize: 14, lineHeight: 1.5 }}>
-            &ldquo;Você está indo muito bem, {' '}
-            <strong>8% acima da meta</strong>. Se continuar assim, pode conquistar seu objetivo{' '}
-            <strong>2 meses antes</strong> do prazo. Vamos acelerar?&rdquo;
+            {isLivre ? (
+              <>
+                &ldquo;Você está poupando livremente de forma exemplar! Seu score relacional de <strong>{jornadaAtiva.score} pontos</strong> mostra excelente disciplina. Que tal conversarmos sobre como rentabilizar seu saldo acumulado?&rdquo;
+              </>
+            ) : (
+              <>
+                &ldquo;Você está indo muito bem, {' '}
+                <strong>8% acima da meta</strong>. Se continuar assim, pode conquistar seu objetivo{' '}
+                <strong>2 meses antes</strong> do prazo. Vamos acelerar?&rdquo;
+              </>
+            )}
           </p>
           <button style={{
             background: '#FFCC00',
@@ -197,7 +264,7 @@ export default function JornadaScreen() {
 
         {/* Capítulos */}
         <div style={{ marginTop: 20 }}>
-          <p style={{ margin: '0 0 14px', fontWeight: 700, fontSize: 16 }}>Sua Jornada do Herói</p>
+          <p style={{ margin: '0 0 14px', fontWeight: 700, fontSize: 16 }}>Sua Jornada do Herói (Toque para Acessar a Trilha) 🗺️</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {capituloLabels.map((cap, i) => {
               const num = i + 1;
@@ -208,6 +275,11 @@ export default function JornadaScreen() {
                 <div
                   key={num}
                   className={isDone ? 'chapter-done' : isActive ? 'chapter-active' : 'chapter-locked'}
+                  onClick={() => {
+                    if (!isLocked) {
+                      setActiveChapterTrilha(num);
+                    }
+                  }}
                   style={{
                     background: isActive ? '#F0F4FF' : 'white',
                     border: '1px solid',
@@ -218,6 +290,8 @@ export default function JornadaScreen() {
                     alignItems: 'center',
                     gap: 12,
                     cursor: isLocked ? 'default' : 'pointer',
+                    transition: 'transform 0.15s ease-in-out',
+                    transform: isActive ? 'scale(1.01)' : 'none',
                   }}
                 >
                   <div style={{
@@ -230,9 +304,26 @@ export default function JornadaScreen() {
                     {isDone ? '✓' : capituloIcons[i]}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 12, color: '#9E9E9E' }}>Capítulo {num}</p>
-                    <p style={{ margin: '2px 0 0', fontWeight: 600, fontSize: 14, color: isLocked ? '#BDBDBD' : '#1A1A1A' }}>{cap}</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#9E9E9E' }}>
+                      Capítulo {num} {isActive && '· Em andamento'}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontWeight: 600, fontSize: 14, color: isLocked ? '#BDBDBD' : '#1A1A1A' }}>
+                      {cap}
+                    </p>
                   </div>
+                  {!isLocked && (
+                    <span style={{
+                      fontSize: 11,
+                      color: isActive ? '#0033A0' : '#00A651',
+                      fontWeight: 700,
+                      background: isActive ? '#EEF2FF' : '#E2FBE9',
+                      padding: '2px 8px',
+                      borderRadius: 8,
+                      marginRight: 4,
+                    }}>
+                      {isActive ? 'Trilha' : 'Rever'}
+                    </span>
+                  )}
                   {(isDone || isActive) && <ChevronRight size={18} color="#9E9E9E" />}
                 </div>
               );
@@ -266,12 +357,20 @@ export default function JornadaScreen() {
           <Plus size={18} /> Criar nova jornada
         </button>
       </div>
+
+      {/* Renderização da Trilha do Capítulo */}
+      {activeChapterTrilha !== null && (
+        <TrilhaModal
+          capituloId={activeChapterTrilha}
+          onClose={() => setActiveChapterTrilha(null)}
+        />
+      )}
     </div>
   );
 }
 
 function InsightsSection() {
-  const { jornadaAtiva } = useAppStore();
+  const { jornadaAtiva, setJornadaDetalhe, setScreen, setActiveDetalheTab, marcarInsightLido } = useAppStore();
   const insights = jornadaAtiva?.insights.slice(0, 3) || [];
 
   const tipoConfig = {
@@ -279,6 +378,23 @@ function InsightsSection() {
     alerta: { icon: '⚠️', bg: '#FFF8E7', border: '#FF8C00', label: 'Alerta' },
     oportunidade: { icon: '💡', bg: '#F0F4FF', border: '#0033A0', label: 'Oportunidade' },
     previsao: { icon: '🔮', bg: '#FDF4FF', border: '#9C27B0', label: 'Previsão' },
+  };
+
+  const handleInsightClick = (id: string, tipo: string) => {
+    if (!jornadaAtiva) return;
+    
+    marcarInsightLido(id);
+    
+    if (tipo === 'alerta') {
+      setActiveDetalheTab('gastos');
+    } else if (tipo === 'previsao') {
+      setActiveDetalheTab('grafico');
+    } else {
+      setActiveDetalheTab('mentor');
+    }
+    
+    setJornadaDetalhe(jornadaAtiva);
+    setScreen('detalhe-jornada');
   };
 
   return (
@@ -295,11 +411,22 @@ function InsightsSection() {
           return (
             <div
               key={ins.id}
+              onClick={() => handleInsightClick(ins.id, ins.tipo)}
               style={{
                 background: cfg.bg,
                 border: `1px solid ${cfg.border}`,
                 borderRadius: 12,
                 padding: '12px 14px',
+                cursor: 'pointer',
+                transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.04)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'none';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -311,9 +438,9 @@ function InsightsSection() {
               </div>
               <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A1A', lineHeight: 1.5 }}>{ins.texto}</p>
               {ins.acao && (
-                <button style={{ background: 'none', border: 'none', color: cfg.border, fontWeight: 700, fontSize: 13, cursor: 'pointer', padding: 0 }}>
+                <span style={{ color: cfg.border, fontWeight: 700, fontSize: 13, display: 'inline-block' }}>
                   {ins.acao} →
-                </button>
+                </span>
               )}
             </div>
           );

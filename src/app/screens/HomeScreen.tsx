@@ -13,8 +13,32 @@ const quickActions = [
 export default function HomeScreen() {
   const { saldoVisible, saldo, jornadaAtiva, setTab, setScreen } = useAppStore();
 
+  const isLivre = jornadaAtiva?.meta_livre;
+  
+  // Cálculo de marcos para a Meta Livre
+  const milestones = [500, 1500, 5000, 10000, 20000, 50000];
+  let nextMilestone = milestones[0];
+  let prevMilestone = 0;
+  if (jornadaAtiva) {
+    for (let i = 0; i < milestones.length; i++) {
+      if (jornadaAtiva.acumulado < milestones[i]) {
+        nextMilestone = milestones[i];
+        prevMilestone = i > 0 ? milestones[i-1] : 0;
+        break;
+      }
+      if (i === milestones.length - 1) {
+        nextMilestone = milestones[i];
+        prevMilestone = milestones[i-1];
+      }
+    }
+  }
+
+  const range = nextMilestone - prevMilestone;
+  const progressInRange = jornadaAtiva ? Math.max(0, jornadaAtiva.acumulado - prevMilestone) : 0;
+  const porcentagemLivre = Math.min(100, Math.round((progressInRange / range) * 100));
+
   const porcentagem = jornadaAtiva
-    ? Math.round((jornadaAtiva.acumulado / jornadaAtiva.valor) * 100)
+    ? (isLivre ? porcentagemLivre : Math.round((jornadaAtiva.acumulado / (jornadaAtiva.valor || 1)) * 100))
     : 0;
 
   return (
@@ -74,7 +98,9 @@ export default function HomeScreen() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Zap size={14} color="#FFCC00" fill="#FFCC00" />
-                  <span style={{ color: '#FFCC00', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>JORNADA ATIVA</span>
+                  <span style={{ color: '#FFCC00', fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>
+                    {isLivre ? 'META LIVRE ATIVA' : 'JORNADA ATIVA'}
+                  </span>
                 </div>
                 <p style={{ margin: '8px 0 4px', color: 'white', fontWeight: 700, fontSize: 18 }}>
                   {jornadaAtiva.icon} {jornadaAtiva.sonho}
@@ -98,7 +124,7 @@ export default function HomeScreen() {
                 R$ {jornadaAtiva.acumulado.toLocaleString('pt-BR')} guardados
               </span>
               <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>
-                Meta: R$ {jornadaAtiva.valor.toLocaleString('pt-BR')}
+                {isLivre ? `Marco: R$ ${nextMilestone.toLocaleString('pt-BR')}` : `Meta: R$ ${jornadaAtiva.valor?.toLocaleString('pt-BR')}`}
               </span>
             </div>
 
@@ -109,7 +135,7 @@ export default function HomeScreen() {
               borderLeft: '3px solid #FFCC00',
             }}>
               <p style={{ margin: 0, color: 'white', fontSize: 13 }}>
-                💡 &ldquo;Você está 8% à frente da meta. Se manter o ritmo, chegará 2 meses antes.&rdquo;
+                💡 &ldquo;{isLivre ? 'Foco no acúmulo contínuo! Cada pequena economia conta para bater o próximo marco.' : 'Você está 8% à frente da meta. Se manter o ritmo, chegará 2 meses antes.'}&rdquo;
               </p>
             </div>
           </div>

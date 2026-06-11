@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from 'react';
 import { useAppStore } from './store/appStore';
 import BottomNav from './components/BottomNav';
 import TopHeader from './components/TopHeader';
@@ -23,7 +24,11 @@ const screenTitles: Record<string, string> = {
 const screensWithBack = ['nova-jornada', 'detalhe-jornada'];
 
 export default function Page() {
-  const { screen, setScreen, setTab } = useAppStore();
+  const { screen, setScreen, setTab, initializeUserSession, loadingDatabase, jornadaAtiva } = useAppStore();
+
+  useEffect(() => {
+    initializeUserSession();
+  }, [initializeUserSession]);
 
   const showHeader = screen !== 'detalhe-jornada' && screen !== 'nova-jornada';
   const showBack = screensWithBack.includes(screen);
@@ -33,6 +38,39 @@ export default function Page() {
     if (screen === 'nova-jornada') { setScreen('jornada'); setTab('jornada'); }
     if (screen === 'detalhe-jornada') { setScreen('jornada'); }
   };
+
+  // Carregamento inicial transparente do Supabase
+  if (loadingDatabase && !jornadaAtiva) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100vw',
+        height: '100vh',
+        background: 'linear-gradient(135deg, #001A4E 0%, #00297B 50%, #0033A0 100%)',
+        color: 'white',
+      }}>
+        <div style={{
+          width: 40,
+          height: 40,
+          borderRadius: '50%',
+          border: '4px solid rgba(255,255,255,0.2)',
+          borderTopColor: '#FFCC00',
+          animation: 'spin 1s linear infinite',
+          marginBottom: 16
+        }} />
+        <span style={{ fontSize: 14, color: '#FFCC00', fontWeight: 600 }}>Carregando dados do BB...</span>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div id="app-shell">

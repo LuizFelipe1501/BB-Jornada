@@ -1,10 +1,10 @@
 "use client";
 import { useAppStore } from '../store/appStore';
-import { Home, Target, Search, Bell, User } from 'lucide-react';
+import { Home, Wallet, Search, Bell, User } from 'lucide-react';
 
 const tabs = [
   { id: 'inicio', label: 'Início', Icon: Home },
-  { id: 'jornada', label: 'Jornada', Icon: Target },
+  { id: 'jornada', label: 'Minhas Finanças', Icon: Wallet },
   { id: 'busca', label: 'Busca', Icon: Search },
   { id: 'notificacoes', label: 'Alertas', Icon: Bell },
   { id: 'perfil', label: 'Perfil', Icon: User },

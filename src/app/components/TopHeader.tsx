@@ -9,7 +9,7 @@ interface Props {
 }
 
 export default function TopHeader({ title, showBack, onBack }: Props) {
-  const { nome, saldoVisible, toggleSaldo, screen } = useAppStore();
+  const { nome, saldoVisible, toggleSaldo, screen, resetUserSession } = useAppStore();
   const isHome = screen === 'home';
 
   return (
@@ -51,7 +51,11 @@ export default function TopHeader({ title, showBack, onBack }: Props) {
           <button style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
             <MessageSquare size={20} />
           </button>
-          <button style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+          <button 
+            onClick={resetUserSession}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}
+            title="Reiniciar sessão do MVP"
+          >
             <LogOut size={20} />
           </button>
         </div>

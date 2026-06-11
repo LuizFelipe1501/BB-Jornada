@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from 'react';
 import { useAppStore } from '../store/appStore';
 
 const tipoConfig = {
@@ -9,7 +10,12 @@ const tipoConfig = {
 };
 
 export default function NotificacoesScreen() {
-  const { notificacoes, marcarInsightLido } = useAppStore();
+  const { notificacoes, marcarTodosInsightsLidos, marcarInsightLido } = useAppStore();
+
+  useEffect(() => {
+    marcarTodosInsightsLidos();
+  }, [marcarTodosInsightsLidos]);
+
   const naoLidas = notificacoes.filter(n => !n.lido);
   const lidas = notificacoes.filter(n => n.lido);
 
