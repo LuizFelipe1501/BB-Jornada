@@ -76,6 +76,8 @@ export interface AppState {
   marcarTodosInsightsLidos: () => Promise<void>;
   addAiMessage: (msg: { role: 'ai' | 'user'; text: string }) => void;
   setAiTyping: (v: boolean) => void;
+  realizarTransacao: (descricao: string, valor: number, tipo: 'debito' | 'credito', categoria: string) => void;
+  alterarNome: (nome: string) => Promise<void>;
 
   // Supabase methods
   initializeUserSession: () => Promise<void>;
@@ -259,6 +261,47 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   addAiMessage: (msg) => set((s) => ({ aiMessages: [...s.aiMessages, msg] })),
   setAiTyping: (v) => set({ aiTyping: v }),
+  
+  realizarTransacao: (descricao, valor, tipo, categoria) => set((s) => {
+    const novoSaldo = tipo === 'credito' ? s.saldo + valor : s.saldo - valor;
+    const novaTransacao: Transacao = {
+      id: Date.now().toString(),
+      descricao,
+      valor,
+      tipo,
+      categoria,
+      data: 'agora'
+    };
+    
+    let activeJ: Jornada | null = s.jornadaAtiva;
+    let jornadas = s.jornadas;
+    if (categoria === 'Meta' && activeJ) {
+      const novoAcumulado = Math.max(0, activeJ.acumulado + (tipo === 'credito' ? -valor : valor));
+      const updatedJ: Jornada = { ...activeJ, acumulado: novoAcumulado };
+      activeJ = updatedJ;
+      jornadas = s.jornadas.map(j => j.id === updatedJ.id ? updatedJ : j);
+      
+      supabase.from('jornadas').update({
+        acumulado: novoAcumulado
+      }).eq('id', updatedJ.id).then(({ error }) => {
+        if (error) console.error('Erro ao atualizar acumulado no Pix:', error);
+      });
+    }
+
+    return {
+      saldo: novoSaldo,
+      transacoes: [novaTransacao, ...s.transacoes],
+      jornadaAtiva: activeJ,
+      jornadas
+    };
+  }),
+
+  alterarNome: async (nome) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bb_jornada_user_name', nome);
+    }
+    set({ nome });
+  },
 
   initializeUserSession: async () => {
     if (typeof window === 'undefined') return;

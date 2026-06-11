@@ -66,9 +66,15 @@ export default function TopHeader({ title, showBack, onBack }: Props) {
 
 function BBLogo() {
   return (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ flexShrink: 0 }}>
       <rect width="32" height="32" rx="6" fill="#FFCC00" />
-      <text x="50%" y="55%" textAnchor="middle" dominantBaseline="middle" fill="#0033A0" fontWeight="900" fontSize="14">BB</text>
+      <svg x="5.5" y="5.5" viewBox="327 464 18.5 17" width="21" height="21">
+        <path
+          d="m 329.75202,470.27969 2.59766,1.7334 3.12011,-2.08008 -1.29882,-0.86915 1.68945,-1.12304 3.6377,2.42675 -5.97657,3.98438 1.29883,0.86914 7.41211,-4.9414 -6.24024,-4.16017 z m 12.48047,4.16015 -2.60253,-1.73339 -3.12013,2.08007 1.29883,0.86425 -1.68946,1.12794 -3.63768,-2.42676 5.97656,-3.98438 -1.29884,-0.86913 -7.40722,4.9414 6.24023,4.16016 z m 0,-6.58692 -1.30371,0.86915 -1.29882,-0.86915 2.60253,-1.7334 z m -12.48047,9.01368 1.29882,-0.86914 1.29884,0.86914 -2.59766,1.7334 z"
+          fill="#0033A0"
+          fillRule="evenodd"
+        />
+      </svg>
     </svg>
   );
 }

@@ -1,9 +1,22 @@
 "use client";
+import { useState } from 'react';
 import { useAppStore } from '../store/appStore';
-import { ChevronRight, Shield, Bell, HelpCircle, FileText, LogOut } from 'lucide-react';
+import { ChevronRight, Shield, Bell, HelpCircle, FileText, LogOut, X } from 'lucide-react';
 
 export default function PerfilScreen() {
-  const { nome, jornadaAtiva, rendaMensal, gastosMensais, resetUserSession } = useAppStore();
+  const { 
+    nome, 
+    jornadaAtiva, 
+    rendaMensal, 
+    gastosMensais, 
+    resetUserSession, 
+    setTab, 
+    setScreen, 
+    alterarNome 
+  } = useAppStore();
+
+  const [activeModal, setActiveModal] = useState<'dados' | 'historico' | 'ajuda' | null>(null);
+  const [tempNome, setTempNome] = useState(nome);
 
   const score = jornadaAtiva?.score || 0;
   const capacidadePoupanca = rendaMensal - gastosMensais;
@@ -19,11 +32,21 @@ export default function PerfilScreen() {
   const handleItemClick = (label: string) => {
     if (label === 'Sair') {
       resetUserSession();
+    } else if (label === 'Notificações') {
+      setTab('notificacoes');
+      setScreen('notificacoes');
+    } else if (label === 'Dados pessoais') {
+      setTempNome(nome);
+      setActiveModal('dados');
+    } else if (label === 'Histórico de jornadas') {
+      setActiveModal('historico');
+    } else if (label === 'Ajuda e suporte') {
+      setActiveModal('ajuda');
     }
   };
 
   return (
-    <div className="scrollable" style={{ flex: 1 }}>
+    <div className="scrollable" style={{ flex: 1, position: 'relative' }}>
       {/* Hero perfil */}
       <div style={{ background: 'linear-gradient(135deg, #0033A0, #1A4FBF)', padding: '24px 16px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -152,6 +175,150 @@ export default function PerfilScreen() {
           BB Jornada v1.0.0 · Banco do Brasil S.A.
         </p>
       </div>
+
+      {/* RENDERIZACAO DE MODAIS (SIMULADORES INTERATIVOS DE PERFIL) */}
+      {activeModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'flex-end',
+          zIndex: 999,
+        }}>
+          {/* Modal Content */}
+          <div style={{
+            background: 'white',
+            width: '100%',
+            borderRadius: '24px 24px 0 0',
+            maxHeight: '80vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 -8px 32px rgba(0,0,0,0.15)',
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 20px',
+              borderBottom: '1px solid #F0F0F0',
+              background: '#F9FAFB',
+            }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#0033A0' }}>
+                {activeModal === 'dados' && 'Dados Pessoais'}
+                {activeModal === 'historico' && 'Histórico de Jornadas'}
+                {activeModal === 'ajuda' && 'Ajuda e Suporte'}
+              </h3>
+              <button 
+                onClick={() => setActiveModal(null)}
+                style={{ background: 'none', border: 'none', color: '#6B6B6B', cursor: 'pointer', padding: 4 }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
+              
+              {/* MODAL: DADOS PESSOAIS */}
+              {activeModal === 'dados' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  <div>
+                    <label style={{ fontSize: 13, fontWeight: 700, color: '#6B6B6B', display: 'block', marginBottom: 6 }}>Nome Completo</label>
+                    <input 
+                      type="text"
+                      value={tempNome}
+                      onChange={e => setTempNome(e.target.value)}
+                      style={{
+                        width: '100%',
+                        border: '1.5px solid #E0E0E0',
+                        borderRadius: 10,
+                        padding: '10px 14px',
+                        fontSize: 14,
+                        outline: 'none',
+                        color: '#1A1A1A'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#6B6B6B', marginBottom: 4 }}>CPF</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>***.821.408-**</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#6B6B6B', marginBottom: 4 }}>Endereço</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>Av. Paulista, 1200 - Bela Vista, São Paulo - SP</p>
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#6B6B6B', marginBottom: 4 }}>Contato</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>(11) 98765-4321 · luiz.felipe@gmail.com</p>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      await alterarNome(tempNome);
+                      setActiveModal(null);
+                    }}
+                    className="bb-btn-primary"
+                    style={{ marginTop: 10 }}
+                  >
+                    Salvar Dados
+                  </button>
+                </div>
+              )}
+
+              {/* MODAL: HISTORICO */}
+              {activeModal === 'historico' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ fontSize: 13, color: '#6B6B6B', margin: '0 0 4px' }}>Jornadas financeiras que você já completou com o BB</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1px solid #F2F2F2' }}>
+                    <div style={{ fontSize: 24 }}>💻</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Comprar Notebook Novo</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9E9E9E' }}>Concluído em Dezembro/2024</p>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#00A651', background: '#E2FBE9', padding: '3px 8px', borderRadius: 8 }}>
+                      R$ 4.500
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 12, borderBottom: '1px solid #F2F2F2' }}>
+                    <div style={{ fontSize: 24 }}>✈️</div>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Viagem de Férias</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9E9E9E' }}>Concluído em Abril/2025</p>
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#00A651', background: '#E2FBE9', padding: '3px 8px', borderRadius: 8 }}>
+                      R$ 3.000
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL: AJUDA */}
+              {activeModal === 'ajuda' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ fontSize: 13, color: '#6B6B6B', margin: '0 0 4px' }}>Dúvidas frequentes sobre as Finanças e Metas</p>
+                  <div style={{ background: '#FAFAFA', border: '1px solid #EAEAEA', borderRadius: 10, padding: 12 }}>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: '#0033A0' }}>Como funciona o Score Relacional?</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#1A1A1A', lineHeight: 1.4 }}>
+                      É uma nota de 0 a 100 baseada na sua consistência em economizar e fazer as trilhas de aprendizado. Notas maiores liberam melhores condições de crédito no BB!
+                    </p>
+                  </div>
+                  <div style={{ background: '#FAFAFA', border: '1px solid #EAEAEA', borderRadius: 10, padding: 12 }}>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 13, color: '#0033A0' }}>O que é a "Meta Livre"?</p>
+                    <p style={{ margin: 0, fontSize: 12, color: '#1A1A1A', lineHeight: 1.4 }}>
+                      Ideal para quem quer poupar sem um objetivo ou prazo definidos. As metas livres progridem conforme você atinge marcos de acúmulo (R$ 500, R$ 1.500, etc.).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
