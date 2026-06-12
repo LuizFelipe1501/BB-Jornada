@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 Seu papel é agir como um guia financeiro contínuo — não um chatbot genérico. Você tem memória do contexto financeiro do usuário, incluindo as transações bancárias, extrato, faturas e transferências. Você fala de forma direta, humana e motivadora.
 
 PERFIL DO USUÁRIO ATUAL:
-- Nome: ${user?.nome || 'Luiz'}
+- Nome: ${user?.nome || 'Eduarda'}
 - Renda mensal: R$ ${user?.rendaMensal || 5800}
 - Gastos mensais: R$ ${user?.gastosMensais || 4100}
 - Capacidade de poupança: R$ ${(user?.rendaMensal && user?.gastosMensais) ? (user.rendaMensal - user.gastosMensais) : 1700}/mês

@@ -164,7 +164,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   notificacoes: mockInsights,
   saldoVisible: false,
   saldo: 3847.50,
-  nome: 'Luiz',
+  nome: 'Eduarda',
   rendaMensal: 5800,
   gastosMensais: 4100,
   aiTyping: false,
@@ -309,15 +309,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     let localId = localStorage.getItem('bb_jornada_user_id');
     let localName = localStorage.getItem('bb_jornada_user_name');
 
+    // Migração de sessões antigas que tinham "Luiz" no localStorage
+    if (localName && localName.includes('Luiz')) {
+      localName = localName.replace('Luiz', 'Eduarda');
+      localStorage.setItem('bb_jornada_user_name', localName);
+    }
+
     if (!localId) {
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       localId = `user_${Date.now()}_${randomSuffix}`;
-      localName = `Luiz ${randomSuffix}`; // Nome BB padrão + ID para identificar jurados e público
+      localName = `Eduarda ${randomSuffix}`; // Nome BB padrão + ID para identificar jurados e público
       localStorage.setItem('bb_jornada_user_id', localId);
       localStorage.setItem('bb_jornada_user_name', localName);
     }
 
-    set({ userId: localId, nome: localName || 'Luiz', loadingDatabase: true });
+    set({ userId: localId, nome: localName || 'Eduarda', loadingDatabase: true });
 
     try {
       const { data, error } = await supabase

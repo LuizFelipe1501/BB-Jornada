@@ -253,7 +253,7 @@ export default function PerfilScreen() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#6B6B6B', marginBottom: 4 }}>Contato</p>
-                    <p style={{ margin: 0, fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>(11) 98765-4321 · luiz.felipe@gmail.com</p>
+                    <p style={{ margin: 0, fontSize: 14, color: '#1A1A1A', fontWeight: 500 }}>(11) 98765-4321 · eduarda.felipe@gmail.com</p>
                   </div>
                   <button 
                     onClick={async () => {
