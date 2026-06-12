@@ -69,7 +69,7 @@ const CHAPTER_DETAILS = [
   },
   {
     capitulo: 4,
-    titulo: 'Acelerando o crescimento',
+    titulo: 'Acelerando o seu sonho',
     descricao: 'Hora de fazer seu dinheiro trabalhar por você. Vamos explorar investimentos de renda fixa e fundos com taxas atraentes.',
     tarefas: [
       { id: 'c4_t1', texto: 'Realizar análise de perfil de investidor (API) do BB', pontos: 20 },

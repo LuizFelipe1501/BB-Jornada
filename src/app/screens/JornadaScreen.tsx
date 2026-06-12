@@ -8,7 +8,7 @@ const capituloLabels = [
   'Conhecendo sua realidade',
   'Eliminando desperdícios',
   'Construindo reservas',
-  'Acelerando o crescimento',
+  'Acelerando o seu sonho',
   'Conquistando o objetivo',
 ];
 
@@ -270,7 +270,7 @@ export default function JornadaScreen() {
               const num = i + 1;
               const isDone = num < jornadaAtiva.capitulo;
               const isActive = num === jornadaAtiva.capitulo;
-              const isLocked = num > jornadaAtiva.capitulo;
+              const isLocked = num > jornadaAtiva.capitulo && num !== 4; // Capítulo 4 ("Acelerando o seu sonho") é sempre liberado
               return (
                 <div
                   key={num}
@@ -314,14 +314,14 @@ export default function JornadaScreen() {
                   {!isLocked && (
                     <span style={{
                       fontSize: 11,
-                      color: isActive ? '#0033A0' : '#00A651',
+                      color: isActive ? '#0033A0' : (num === 4 && jornadaAtiva.capitulo < 4) ? '#0033A0' : '#00A651',
                       fontWeight: 700,
-                      background: isActive ? '#EEF2FF' : '#E2FBE9',
+                      background: isActive ? '#EEF2FF' : (num === 4 && jornadaAtiva.capitulo < 4) ? '#E8E8E8' : '#E2FBE9',
                       padding: '2px 8px',
                       borderRadius: 8,
                       marginRight: 4,
                     }}>
-                      {isActive ? 'Trilha' : 'Rever'}
+                      {isActive ? 'Trilha' : (num === 4 && jornadaAtiva.capitulo < 4) ? 'Liberado' : 'Rever'}
                     </span>
                   )}
                   {(isDone || isActive) && <ChevronRight size={18} color="#9E9E9E" />}
@@ -401,7 +401,7 @@ function InsightsSection() {
     <div style={{ marginTop: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <p style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Insights do Mentor</p>
-        <span style={{ background: '#D32F2F', color: 'white', borderRadius: 10, fontSize: 11, fontWeight: 700, padding: '2px 8px' }}>
+        <span style={{ background: '#FFCC00', color: '#0033A0', borderRadius: 10, fontSize: 11, fontWeight: 700, padding: '2px 8px' }}>
           {insights.filter(i => !i.lido).length} novos
         </span>
       </div>
@@ -433,7 +433,7 @@ function InsightsSection() {
                 <span style={{ fontSize: 16 }}>{cfg.icon}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: cfg.border }}>{cfg.label}</span>
                 {!ins.lido && (
-                  <span style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: 4, background: '#D32F2F' }} />
+                  <span style={{ marginLeft: 'auto', width: 7, height: 7, borderRadius: 4, background: '#FFCC00' }} />
                 )}
               </div>
               <p style={{ margin: '0 0 8px', fontSize: 13, color: '#1A1A1A', lineHeight: 1.5 }}>{ins.texto}</p>

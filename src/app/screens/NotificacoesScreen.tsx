@@ -24,7 +24,7 @@ export default function NotificacoesScreen() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: '#1A1A1A' }}>Insights do Mentor</h2>
         {naoLidas.length > 0 && (
-          <span style={{ background: '#D32F2F', color: 'white', borderRadius: 12, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
+          <span style={{ background: '#FFCC00', color: '#0033A0', borderRadius: 12, padding: '3px 10px', fontSize: 12, fontWeight: 700 }}>
             {naoLidas.length} novos
           </span>
         )}
@@ -52,7 +52,7 @@ export default function NotificacoesScreen() {
                     <span style={{ fontSize: 18 }}>{cfg.icon}</span>
                     <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color, letterSpacing: 0.5 }}>{cfg.label.toUpperCase()}</span>
                     <span style={{ marginLeft: 'auto', fontSize: 11, color: '#9E9E9E' }}>{ins.data}</span>
-                    <span style={{ width: 8, height: 8, borderRadius: 4, background: '#D32F2F', flexShrink: 0 }} />
+                    <span style={{ width: 8, height: 8, borderRadius: 4, background: '#FFCC00', flexShrink: 0 }} />
                   </div>
                   <p style={{ margin: '0 0 10px', fontSize: 14, color: '#1A1A1A', lineHeight: 1.6 }}>{ins.texto}</p>
                   {ins.acao && (
