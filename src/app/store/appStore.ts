@@ -130,7 +130,7 @@ const mockJornada: Jornada = {
   valor: 35000,
   prazo: 24,
   acumulado: 14200,
-  capitulo: 3,
+  capitulo: 4,
   score: 72,
   criada: '2024-01-15',
   descricao: 'Quero comprar um Onix 2024 à vista para não pagar juros',
@@ -335,22 +335,32 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (error) throw error;
 
       if (data && data.length > 0) {
-        const fetchedJornadas: Jornada[] = data.map((d: any) => ({
-          id: d.id,
-          sonho: d.sonho,
-          icon: d.icon,
-          valor: d.valor !== null ? Number(d.valor) : null,
-          prazo: d.prazo !== null ? Number(d.prazo) : null,
-          acumulado: Number(d.acumulado),
-          capitulo: Number(d.capitulo),
-          score: Number(d.score),
-          criada: d.criada,
-          descricao: d.descricao || '',
-          cor: d.cor || '#0033A0',
-          insights: d.insights || [],
-          meta_livre: d.meta_livre || false,
-          trilha_status: d.trilha_status || {}
-        }));
+        const fetchedJornadas: Jornada[] = data.map((d: any) => {
+          let cap = Number(d.capitulo);
+          if (cap < 4) {
+            cap = 4;
+            // Atualiza no Supabase em background
+            supabase.from('jornadas').update({ capitulo: 4 }).eq('id', d.id).then(({ error }) => {
+              if (error) console.error('Erro ao migrar capitulo para 4 no Supabase:', error);
+            });
+          }
+          return {
+            id: d.id,
+            sonho: d.sonho,
+            icon: d.icon,
+            valor: d.valor !== null ? Number(d.valor) : null,
+            prazo: d.prazo !== null ? Number(d.prazo) : null,
+            acumulado: Number(d.acumulado),
+            capitulo: cap,
+            score: Number(d.score),
+            criada: d.criada,
+            descricao: d.descricao || '',
+            cor: d.cor || '#0033A0',
+            insights: d.insights || [],
+            meta_livre: d.meta_livre || false,
+            trilha_status: d.trilha_status || {}
+          };
+        });
 
         set({
           jornadas: fetchedJornadas,
@@ -367,7 +377,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           valor: 35000,
           prazo: 24,
           acumulado: 14200,
-          capitulo: 3,
+          capitulo: 4,
           score: 72,
           criada: new Date().toISOString(),
           descricao: 'Quero comprar um Onix 2024 à vista para não pagar juros',

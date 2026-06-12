@@ -75,7 +75,7 @@ ${jornada ? `
 - Meta: R$ 35.000
 - Já guardou: R$ 14.200 (40,6% concluído)
 - Prazo original: 24 meses
-- Capítulo atual: 3 — Construindo Reservas
+- Capítulo atual: 4 — Acelerando o seu sonho
 - Score Relacional: 72/100
 `}
 
